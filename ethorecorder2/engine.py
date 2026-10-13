@@ -33,7 +33,7 @@ from . import APP_NAME, __version__
 from .audio import AudioInput, pick_input
 from .cameras import Camera, discover
 from .clock import ClockMap, fit_arrivals, fit_line, now_ns
-from .config import Settings
+from .config import MAX_CAMERAS, Settings
 from .encoder import VideoWriter, run_ffmpeg
 from .resample import resample_file
 
@@ -95,6 +95,12 @@ class Engine:
                 "No Basler camera found. Check that the switch is powered, the network cable is "
                 "plugged into the PC, and that no other program (pylon Viewer) is using the cameras."
             )
+        if len(infos) > MAX_CAMERAS:
+            self.log(
+                f"WARNING: {len(infos)} cameras found - using the {MAX_CAMERAS} with the lowest serial numbers, "
+                "ignoring " + ", ".join(d.GetSerialNumber() for d in infos[MAX_CAMERAS:])
+            )
+            infos = infos[:MAX_CAMERAS]
         try:
             for i, info in enumerate(infos):
                 cam = Camera(info, i, self.log)

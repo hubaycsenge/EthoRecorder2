@@ -113,6 +113,7 @@ class Camera:
         with self.lock:
             self.set("TriggerMode", "Off")
             self.set("AcquisitionFrameRateEnable", False)
+            self.set("ImageCompressionMode", "Off")  # PRO models: frames are read uncompressed
             formats = list(self.cam.PixelFormat.GetSymbolics())
             wanted = [f for f in formats if f.startswith("Bayer") and f in PIX_FMT] if s.color else []
             fmt = (wanted or ["Mono8"])[0]
@@ -120,10 +121,12 @@ class Camera:
 
             wmax = self.get("WidthMax", "SensorWidth", default=s.width)
             hmax = self.get("HeightMax", "SensorHeight", default=s.height)
+            if self.is_emu:  # emulated sensors are 4096 x 4096; mimic the a2A1920-51gcPRO
+                wmax, hmax = min(wmax, 1920), min(hmax, 1200)
             self.set("OffsetX", 0)
             self.set("OffsetY", 0)
-            self.set("Width", min(s.width, wmax) // 2 * 2)
-            self.set("Height", min(s.height, hmax) // 2 * 2)
+            self.set("Width", min(s.width or wmax, wmax) // 2 * 2)
+            self.set("Height", min(s.height or hmax, hmax) // 2 * 2)
             self.width = int(self.cam.Width.GetValue())
             self.height = int(self.cam.Height.GetValue())
             # centre the region; even offsets keep the Bayer pattern unchanged

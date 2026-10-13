@@ -1,4 +1,4 @@
-"""Entry point:  python -m ethorecorder2  [--demo] [--headless --duration S]"""
+"""Entry point:  python -m ethorecorder2  [--demo [N]] [--headless --duration S]"""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ import threading
 import time
 
 from . import APP_NAME, __version__
-from .config import Settings
+from .config import MAX_CAMERAS, Settings
 
 
 def run_headless(settings: Settings, demo: bool, duration: float) -> int:
@@ -35,7 +35,8 @@ def run_headless(settings: Settings, demo: bool, duration: float) -> int:
 
 def main() -> int:
     ap = argparse.ArgumentParser(prog=APP_NAME, description="Synchronised Basler camera + audio recorder")
-    ap.add_argument("--demo", action="store_true", help="use pylon's emulated cameras instead of real ones")
+    ap.add_argument("--demo", nargs="?", type=int, const=2, default=0, metavar="N",
+                    help=f"use N of pylon's emulated cameras instead of real ones (default 2, up to {MAX_CAMERAS})")  # fmt: skip
     ap.add_argument("--headless", action="store_true", help="record without a window, then exit")
     ap.add_argument("--duration", type=float, default=10.0, help="headless recording length in seconds")
     ap.add_argument("--output", help="output folder (overrides the saved setting for this run)")
@@ -48,12 +49,12 @@ def main() -> int:
     if args.demo:
         import os
 
-        os.environ.setdefault("PYLON_CAMEMU", "2")
+        os.environ.setdefault("PYLON_CAMEMU", str(min(max(args.demo, 1), MAX_CAMERAS)))
     if args.headless:
-        return run_headless(settings, args.demo, args.duration)
+        return run_headless(settings, bool(args.demo), args.duration)
     from .gui import run_gui
 
-    return run_gui(settings, args.demo)
+    return run_gui(settings, bool(args.demo))
 
 
 if __name__ == "__main__":

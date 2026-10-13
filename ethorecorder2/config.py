@@ -10,13 +10,17 @@ from pathlib import Path
 
 from . import APP_NAME
 
-# (label, width, height); 0 x 0 means "largest the camera offers".
+MAX_CAMERAS = 7  # cameras used at once; further ones on the network are ignored
+
+# (label, width, height); 0 x 0 means "largest the camera offers"
+# (1920 x 1200 on the a2A1920-51gcPRO).
 RESOLUTION_PRESETS = [
-    ("Full sensor 2048 x 1536", 2048, 1536),
-    ("1920 x 1440", 1920, 1440),
+    ("Full sensor", 0, 0),
+    ("1920 x 1080", 1920, 1080),
     ("1600 x 1200", 1600, 1200),
     ("1440 x 1080", 1440, 1080),
     ("1280 x 960", 1280, 960),
+    ("1280 x 720", 1280, 720),
     ("1024 x 768", 1024, 768),
     ("800 x 600", 800, 600),
 ]
@@ -51,8 +55,8 @@ class Settings:
     duration_limit_min: float = 0.0  # 0 = record until Stop is pressed
 
     # --- image
-    width: int = 2048
-    height: int = 1536
+    width: int = 0  # 0 x 0 = full sensor
+    height: int = 0
     color: bool = True
     fps: float = 0.0  # 0 = highest rate the link allows
 
@@ -95,6 +99,8 @@ class Settings:
                     setattr(s, f.name, type(getattr(s, f.name))(data[f.name]))
                 except (TypeError, ValueError):
                     pass
+        if (s.width, s.height) == (2048, 1536):  # "full sensor" of the earlier a2A2048 cameras
+            s.width = s.height = 0
         return s
 
     def save(self) -> None:

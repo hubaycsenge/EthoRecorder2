@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import sys
 import threading
 from pathlib import Path
@@ -17,7 +18,7 @@ from PySide6.QtWidgets import (
 
 from . import APP_NAME, __version__
 from .audio import list_inputs, pick_input
-from .config import QUALITY_PRESETS, RESOLUTION_PRESETS, Settings
+from .config import MAX_CAMERAS, QUALITY_PRESETS, RESOLUTION_PRESETS, Settings
 from .engine import Engine
 
 REC_RED = "#d93025"
@@ -164,8 +165,8 @@ class MainWindow(QMainWindow):
 
         for key, fn in (
             ("F11", self.toggle_fullscreen), ("F", self.toggle_fullscreen), ("Escape", self.exit_fullscreen),
-            ("0", lambda: self.select_view(-1)), ("1", lambda: self.select_view(0)), ("2", lambda: self.select_view(1)),
-            ("3", lambda: self.select_view(2)), ("4", lambda: self.select_view(3)),
+            ("0", lambda: self.select_view(-1)),
+            *((str(i + 1), lambda i=i: self.select_view(i)) for i in range(MAX_CAMERAS)),
         ):  # fmt: skip
             QShortcut(QKeySequence(key), self, activated=fn)
 
@@ -275,7 +276,7 @@ class MainWindow(QMainWindow):
             wdg.toggled.connect(self.on_exposure_changed)
         for wdg in (self.exp_spin, self.gain_spin):
             wdg.editingFinished.connect(self.on_exposure_changed)
-        exp_box = QGroupBox("3. Brightness (both cameras)")
+        exp_box = QGroupBox("3. Brightness (all cameras)")
         eform = QFormLayout(exp_box)
         for label, a, b in (("Exposure:", self.exp_auto, self.exp_spin), ("Gain:", self.gain_auto, self.gain_spin),
                             ("White balance:", self.wb_auto, self.wb_once)):  # fmt: skip
@@ -480,8 +481,8 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(
                 self, "Cameras not hardware-synchronised",
                 "The camera clocks could not be synchronised (PTP).\n\nRecording still works and frames are matched "
-                "by time, but the two cameras do not expose at exactly the same instant (up to half a frame apart).\n\n"
-                "Check that both cameras are on the same switch, then Disconnect and Connect again.",
+                "by time, but the cameras do not expose at exactly the same instant (up to half a frame apart).\n\n"
+                "Check that all cameras are on the same switch, then Disconnect and Connect again.",
             )  # fmt: skip
 
     def on_audio_changed(self) -> None:
@@ -548,7 +549,7 @@ class MainWindow(QMainWindow):
             self.placeholder.setText("Not connected.")
             self.placeholder.show()
             self.grid.addWidget(self.placeholder, 0, 0)
-        cols = 1 if len(cams) == 1 else 2
+        cols = math.ceil(math.sqrt(len(cams))) if cams else 1  # 1, 2, 2x2, 3x2, 3x3
         for cam in cams:
             v = ImageView(cam.index)
             v.double_clicked.connect(lambda i: self.select_view(-1 if self.selected == i else i))
