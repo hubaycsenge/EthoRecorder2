@@ -302,6 +302,7 @@ class MainWindow(QMainWindow):
         for label, crf in QUALITY_PRESETS:
             self.quality_combo.addItem(label, crf)
         self.embed_check = QCheckBox("Put the sound into the video files too")
+        self.combined_check = QCheckBox("Save combined (all cameras in one video, with sound)")
         self.limit_spin = QDoubleSpinBox(decimals=1, minimum=0.0, maximum=100000.0, suffix=" min")
         self.limit_spin.setSpecialValueText("until I press Stop")
         self.record_btn = QPushButton("●  Start recording")
@@ -316,6 +317,7 @@ class MainWindow(QMainWindow):
         rform.addRow("Name:", self.name_edit)
         rform.addRow("Quality:", self.quality_combo)
         rform.addRow("", self.embed_check)
+        rform.addRow("", self.combined_check)
         rform.addRow("Stop after:", self.limit_spin)
         rform.addRow(self.record_btn)
         rform.addRow(self.rec_label)
@@ -365,7 +367,8 @@ class MainWindow(QMainWindow):
         if s.fps > 0:
             self.fps_spin.setValue(s.fps)
         for wdg, value in ((self.exp_auto, s.exposure_auto), (self.gain_auto, s.gain_auto),
-                           (self.wb_auto, s.white_balance_auto), (self.embed_check, s.embed_audio)):  # fmt: skip
+                           (self.wb_auto, s.white_balance_auto), (self.embed_check, s.embed_audio),
+                           (self.combined_check, s.save_combined)):  # fmt: skip
             wdg.blockSignals(True)
             wdg.setChecked(value)
             wdg.blockSignals(False)
@@ -396,6 +399,7 @@ class MainWindow(QMainWindow):
         s.session_name = self.name_edit.text().strip() or "session"
         s.crf = self.quality_combo.currentData()
         s.embed_audio = self.embed_check.isChecked()
+        s.save_combined = self.combined_check.isChecked()
         s.duration_limit_min = self.limit_spin.value()
         if self.audio_combo.currentData() is not None:
             s.audio_device = self.audio_combo.currentData()
@@ -666,7 +670,7 @@ class MainWindow(QMainWindow):
         self.fps_spin.setEnabled(free and preview and not self.fps_max_check.isChecked())
         for w in (self.audio_combo, self.audio_refresh):
             w.setEnabled(free and (idle or preview))
-        for w in (self.dir_edit, self.name_edit, self.quality_combo, self.embed_check, self.limit_spin):
+        for w in (self.dir_edit, self.name_edit, self.quality_combo, self.embed_check, self.combined_check, self.limit_spin):
             w.setEnabled(not recording and state != "finalizing")
         self.wb_once.setEnabled(preview or recording)
         self.record_btn.setEnabled(free and (preview or recording))

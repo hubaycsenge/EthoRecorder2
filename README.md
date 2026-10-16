@@ -125,6 +125,7 @@ For a recording named `trial1` started on 9 Oct 2026 at 14:30:05:
 trial1_20261009_143005/
   trial1_20261009_143005_cam1.mp4          video, camera 1 (H.264) + sound track
   trial1_20261009_143005_cam2.mp4          video, camera 2 (H.264) + sound track
+  trial1_20261009_143005_combined.mp4      all cameras in one picture + sound track (if ticked)
   trial1_20261009_143005_audio.wav         sound, aligned to the video
   trial1_20261009_143005_audio_raw.wav     sound exactly as captured (backup)
   trial1_20261009_143005_cam1_frames.csv   one line per frame: timestamps, status
@@ -135,6 +136,7 @@ trial1_20261009_143005/
 
 - The cameras are numbered by serial number: camera 1 has the lowest.
 - **Videos**: constant frame rate, same number of frames in every file. Frame *N* in every file was exposed at the same instant.
+- **`_combined.mp4`**: all cameras side by side in a grid (camera 1 top left), with the sound, for watching a trial at a glance. Made after *Stop recording* when *Save combined* is ticked under *4. Recording*; making it adds to the time the files take to finish. It is 1920 pixels wide, so each camera is shown smaller than in its own file: use the single-camera files for analysis.
 - **`_audio.wav`**: sample 0 is the moment of frame 0, and the sound card's clock error has been corrected, so time *t* in the WAV is time *t* in the videos for the whole recording. This is the file to analyse.
 - **`_audio_raw.wav`**: untouched capture, starting about 0.3 s before frame 0 (the exact position is in the JSON file). Kept as a backup; can be switched off (`keep_raw_audio`).
 - **`_frames.csv`**: `status` is `ok`, or `filled` for a missing frame that was replaced by a repeat. `camera_timestamp_ns` is the camera's own exposure time stamp.
@@ -195,6 +197,7 @@ when the program closes:
 | `gain_auto_max_db` | Upper limit for automatic gain (default 12 dB). |
 | `exposure_auto_max_ms` | Upper limit for automatic exposure (default 30 ms). |
 | `keep_raw_audio` | Keep `_audio_raw.wav` (default yes). |
+| `combined_width` | Width of `_combined.mp4` in pixels (default 1920). |
 | `x264_preset` | Encoder speed; `veryfast` by default. `faster` or `medium` give smaller files but need more CPU. |
 | `link_budget_mbytes` | Total data rate of all cameras together in MB/s (default 122 for one gigabit link). |
 | `packet_size` | Network packet size (default 1500). Set 8192 only if jumbo frames are enabled on the PC port **and** in the switch; gains about 4 % frame rate. |

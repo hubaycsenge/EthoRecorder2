@@ -428,6 +428,16 @@ class Engine:
             if errlog.exists() and errlog.stat().st_size == 0:
                 errlog.unlink()
 
+        if s.save_combined and len(files) == len(rec.writers):
+            self.progress = "writing combined video (all cameras)"
+            combined = Path(f"{base}_combined.mp4")
+            try:
+                self._write_combined([rec.folder / f for f in files], wav if audio_info else None, combined)
+                files.append(combined.name)
+            except Exception as e:
+                self.log(f"ERROR: combined video: {e}")
+                combined.unlink(missing_ok=True)
+
         cam_info = []
         for cam, w in zip(self.cameras, rec.writers):
             cam_info.append(
@@ -473,6 +483,40 @@ class Engine:
         meta["folder"] = str(rec.folder)
         meta["ok"] = not any(w.error for w in rec.writers)
         return meta
+
+    def _write_combined(self, videos: list[Path], wav: Path | None, out: Path) -> None:
+        """All camera videos in one grid (camera 1 top left, the last row
+        centred), ``s.combined_width`` pixels wide, with the aligned sound."""
+        s = self.s
+        n = len(videos)
+        cols = math.ceil(math.sqrt(n))
+        c0 = self.cameras[0]
+        tw = min(c0.width, s.combined_width // cols) // 2 * 2
+        th = round(tw * c0.height / c0.width / 2) * 2
+        args, chains, layout = [], [], []
+        for i, v in enumerate(videos):
+            args += ["-i", str(v)]
+            chains.append(f"[{i}:v:0]scale={tw}:{th}[v{i}]")
+            r, c = divmod(i, cols)
+            in_row = min(cols, n - r * cols)
+            layout.append(f"{(cols - in_row) * tw // 2 + c * tw}_{r * th}")
+        if n == 1:
+            graph = f"[0:v:0]scale={tw}:{th}[out]"
+        else:
+            graph = ";".join(chains) + ";" + "".join(f"[v{i}]" for i in range(n))
+            graph += f"xstack=inputs={n}:layout={'|'.join(layout)}:fill=black[out]"
+        if wav:
+            args += ["-i", str(wav)]
+        args += ["-filter_complex", graph, "-map", "[out]"]
+        if wav:
+            args += ["-map", f"{n}:a:0", "-c:a", "aac", "-b:a", "256k"]
+        gop = max(1, round(self.fps))
+        args += [
+            "-c:v", "libx264", "-preset", s.x264_preset, "-crf", str(s.crf), "-g", str(gop), "-pix_fmt", "yuv420p",
+            "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709",
+            "-movflags", "+faststart", str(out),
+        ]  # fmt: skip
+        run_ffmpeg(args)
 
     def _align_audio(self, rec, audio, blocks, raw_wav, wav, duration_ns, latency_ns) -> dict:
         """Write ``wav`` so that its sample n lies n/rate seconds after video

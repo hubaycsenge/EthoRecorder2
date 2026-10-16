@@ -52,6 +52,8 @@ class Settings:
     x264_preset: str = "veryfast"
     embed_audio: bool = True
     keep_raw_audio: bool = True
+    save_combined: bool = True  # extra video with all cameras side by side + sound
+    combined_width: int = 1920  # width of that video in pixels
     duration_limit_min: float = 0.0  # 0 = record until Stop is pressed
 
     # --- image
