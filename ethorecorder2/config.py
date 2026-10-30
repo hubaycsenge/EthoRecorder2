@@ -43,10 +43,16 @@ def config_dir() -> Path:
     return base / APP_NAME
 
 
+def default_output_dir() -> Path:
+    if sys.platform.startswith("linux"):
+        return Path.home() / "Videos" / "EthoRecorder2_recordings"
+    return Path.home() / "EthoRecorder2_recordings"
+
+
 @dataclass
 class Settings:
     # --- output
-    output_dir: str = str(Path.home() / "EthoRecorder2_recordings")
+    output_dir: str = str(default_output_dir())
     session_name: str = "session"
     crf: int = 20
     x264_preset: str = "veryfast"
